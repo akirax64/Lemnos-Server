@@ -53,9 +53,8 @@ public class ProdutoService {
 
     @Cacheable("productsDiscount")
     public ResponseEntity<List<ProdutoResponse>> getAllWithDiscount() {
-        List<ProdutoResponse> produtoResponse = produtoRepository.findAll()
+        List<ProdutoResponse> produtoResponse = produtoRepository.findByDescontoValorDescontoNot("0")
                 .stream()
-                .filter(produto -> !produto.getDesconto().getValorDesconto().equals("0"))
                 .map(this::getProdutoResponse)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(produtoResponse);
