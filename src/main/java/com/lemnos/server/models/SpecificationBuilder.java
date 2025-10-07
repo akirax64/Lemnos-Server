@@ -1,6 +1,5 @@
 package com.lemnos.server.models;
 
-import com.lemnos.server.models.produto.ProdutoSpecifications;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Date;

@@ -4,6 +4,7 @@ import com.lemnos.server.exceptions.auth.TokenNotValidOrExpiredException;
 import com.lemnos.server.exceptions.cadastro.CadastroCpfAlreadyInUseException;
 import com.lemnos.server.exceptions.entidades.funcionario.FuncionarioNotFoundException;
 import com.lemnos.server.exceptions.global.UpdateNotValidException;
+import com.lemnos.server.models.SpecificationBuilder;
 import com.lemnos.server.models.dtos.requests.FuncionarioFiltroRequest;
 import com.lemnos.server.models.dtos.requests.FuncionarioRequest;
 import com.lemnos.server.models.dtos.responses.EnderecoResponse;
@@ -44,11 +45,10 @@ public class FuncionarioService extends Util {
     }
 
     public ResponseEntity<List<FuncionarioResponse>> filterByName(FuncionarioFiltroRequest filtro) {
-        Specification<Funcionario> specification = Specification.where(null);
+        Specification<Funcionario> specification = new SpecificationBuilder<Funcionario>()
+                .addIf(StringUtils::isNotBlank, filtro.nome(), FuncionarioSpecification::hasNome)
+                .build();
 
-        if (StringUtils.isNotBlank(filtro.nome())) {
-            specification = specification.and(FuncionarioSpecification.hasNome(filtro.nome()));
-        }
         int page = (filtro.page() != null && filtro.page() > 0) ? filtro.page() : 0;
         int size = (filtro.size() != null && filtro.size() > 0) ? filtro.size() : 5;
         Pageable pageable = PageRequest.of(page, size);
