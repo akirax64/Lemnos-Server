@@ -4,6 +4,7 @@ import com.lemnos.server.exceptions.entidades.fornecedor.FornecedorNotFoundExcep
 import com.lemnos.server.exceptions.entidades.produto.ProdutoNotFoundException;
 import com.lemnos.server.exceptions.produto.AvaliacaoNotValidException;
 import com.lemnos.server.exceptions.produto.ProdutoNotValidException;
+import com.lemnos.server.models.SpecificationBuilder;
 import com.lemnos.server.models.dtos.requests.ProdutoFiltroRequest;
 import com.lemnos.server.models.entidades.Fornecedor;
 import com.lemnos.server.models.produto.*;
@@ -65,28 +66,20 @@ public class ProdutoService {
     }
 
     public ResponseEntity<List<ProdutoResponse>> getBy(ProdutoFiltroRequest filtro) {
-        Specification<Produto> specification = Specification.where(null);
+        Specification<Produto> specification = new SpecificationBuilder<Produto>()
+                .addIf(StringUtils::isNotBlank, filtro.nome(), ProdutoSpecifications::hasNomeOrDescricao)
+                .addIf(StringUtils::isNotBlank, filtro.categoria(), ProdutoSpecifications::hasCategoria)
+                .addIf(StringUtils::isNotBlank, filtro.subCategoria(), ProdutoSpecifications::hasSubCategoria)
+                .addIf(StringUtils::isNotBlank, filtro.marca(), ProdutoSpecifications::hasFabricante)
+                .addIf(avaliacao -> avaliacao >= 0, filtro.avaliacao(), ProdutoSpecifications::hasAvaliacao)
+                .addValueRange(
+                        filtro.menorPreco(),
+                        filtro.maiorPreco(),
+                        ProdutoSpecifications::isPrecoBetween,
+                        0.0
+                )
+                .build();
 
-        if (StringUtils.isNotBlank(filtro.nome())) {
-            specification = specification.and(ProdutoSpecifications.hasNomeOrDescricao(filtro.nome()));
-        }
-        if (StringUtils.isNotBlank(filtro.categoria())) {
-            specification = specification.and(ProdutoSpecifications.hasCategoria(filtro.categoria()));
-        }
-        if (StringUtils.isNotBlank(filtro.subCategoria())) {
-            specification = specification.and(ProdutoSpecifications.hasSubCategoria(filtro.subCategoria()));
-        }
-        if (StringUtils.isNotBlank(filtro.marca())) {
-            specification = specification.and(ProdutoSpecifications.hasFabricante(filtro.marca()));
-        }
-        if ((filtro.menorPreco() != null && filtro.menorPreco() >= 0) && (filtro.maiorPreco() != null && filtro.maiorPreco() >= 0)) {
-            specification = specification.and(ProdutoSpecifications.isPrecoBetween(filtro.menorPreco(), filtro.maiorPreco()));
-        } else if (filtro.menorPreco() == null && (filtro.maiorPreco() != null && filtro.maiorPreco() >= 0)) {
-            specification = specification.and(ProdutoSpecifications.isPrecoBetween(0.0, filtro.maiorPreco()));
-        }
-        if (filtro.avaliacao() != null && filtro.avaliacao() >= 0) {
-            specification = specification.and(ProdutoSpecifications.hasAvaliacao(filtro.avaliacao()));
-        }
         int page = (filtro.page() != null && filtro.page() > 0) ? filtro.page() : 0;
         int size = (filtro.size() != null && filtro.size() > 0) ? filtro.size() : 10;
         Pageable pageable = PageRequest.of(page, size);
